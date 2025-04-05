@@ -89,6 +89,95 @@ tail -f /var/log/snmptraps.log
 ---
 
 This setup will capture and log all incoming SNMP traps. 
+#
+#
+
+
+# SNMPv3 with SHA authentication and AES privacy protocol on your SNMP server (`snmptrapd`), follow these steps:
+
+### 1. Create SNMPv3 User
+
+First, you'll need to create a new SNMPv3 user with the desired authentication and privacy protocols. You can do this with the `snmpusm` command, which allows you to create and configure SNMPv3 users.
+
+1. **Create the user**:
+
+   Run the following command to create an SNMPv3 user with the authentication protocol set to `SHA` and the privacy protocol set to `AES`:
+
+   ```bash
+   sudo net-snmp-config --create-snmpv3-user -u epicsnmp -A <authentication-password> -X <privacy-password> -a SHA -x AES
+   ```
+
+   - `epicsnmp` is the username.
+   - `<authentication-password>` is the password used for SHA authentication.
+   - `<privacy-password>` is the password used for AES encryption.
+
+   For example:
+
+   ```bash
+   sudo net-snmp-config --create-snmpv3-user -u epicsnmp -A authpassword -X privpassword -a SHA -x AES
+   ```
+
+   This will configure the user `epicsnmp` to use SHA for authentication and AES for privacy.
+
+### 2. Modify `snmpd.conf`
+
+Next, modify the SNMP daemon configuration file (`/etc/snmp/snmpd.conf`) to allow SNMPv3 access using the user you just created. Add the following lines to the configuration file:
+
+```bash
+# Define the SNMPv3 user and access control
+createUser epicsnmp SHA authpassword AES privpassword
+rocommunity public
+```
+
+- `createUser` specifies the SNMPv3 user (`epicsnmp`) with the authentication (`SHA`) and privacy (`AES`) passwords.
+- You can set `rocommunity` or `rwcommunity` as per your access needs, which define the community string for SNMPv1/v2c access (if needed for compatibility).
+
+### 3. Restart SNMP Daemon
+
+After making these changes, restart the `snmpd` service for the configuration to take effect:
+
+```bash
+sudo systemctl restart snmpd
+```
+
+### 4. Testing SNMPv3 Access
+
+Now, you can test the SNMPv3 access using the `snmpget` or `snmpwalk` command:
+
+```bash
+snmpget -v3 -u epicsnmp -A authpassword -X privpassword -a SHA -x AES -l authPriv -O qv localhost sysUpTime.0
+```
+
+Explanation of the parameters:
+- `-v3` specifies SNMP version 3.
+- `-u epicsnmp` specifies the username (`epicsnmp`).
+- `-A authpassword` specifies the authentication password (`authpassword`).
+- `-X privpassword` specifies the privacy password (`privpassword`).
+- `-a SHA` specifies the authentication protocol (SHA).
+- `-x AES` specifies the privacy protocol (AES).
+- `-l authPriv` specifies that both authentication and privacy are required.
+- `localhost` specifies the SNMP target host (in this case, the local machine).
+- `sysUpTime.0` is an example OID to retrieve system uptime.
+
+You should receive the result of the query if everything is configured correctly.
+
+### 5. (Optional) SNMP Trap Configuration
+
+If you're using `snmptrapd` and want to configure it to use SNMPv3 as well, you'll need to modify the trap daemon configuration (`/etc/snmp/snmptrapd.conf`) to specify the user and corresponding security parameters:
+
+```bash
+createUser epicsnmp SHA authpassword AES privpassword
+authtrapenable yes
+```
+
+This will ensure that the SNMP trap daemon processes traps using the configured SNMPv3 user.
+
+### Final Notes:
+- Ensure that SNMPv3 users and passwords are securely managed.
+- Modify the `/etc/snmp/snmpd.conf` and `/etc/snmp/snmptrapd.conf` as needed based on your security and access requirements.
+
+
+
 
 
 ##
