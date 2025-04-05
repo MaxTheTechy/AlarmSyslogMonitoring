@@ -104,7 +104,9 @@ First, you'll need to create a new SNMPv3 user with the desired authentication a
    Run the following command to create an SNMPv3 user with the authentication protocol set to `SHA` and the privacy protocol set to `AES`:
 
    ```bash
-   sudo net-snmp-config --create-snmpv3-user -u epicsnmp -A <authentication-password> -X <privacy-password> -a SHA -x AES
+   sudo net-snmp-create-v3-user -A <authentication-password> -X <privacy-password> -a SHA -x AES <username>
+
+   sudo net-snmp-config --create-snmpv3-user -u <username> -A <authentication-password> -X <privacy-password> -a SHA -x AES
    ```
 
    - `epicsnmp` is the username.
