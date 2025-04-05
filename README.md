@@ -1,5 +1,177 @@
 # AlarmMon
 
+
+To log all SNMP traps received on your system, follow these steps based on your OS:
+
+---
+
+### **1. Install SNMP Trap Daemon (`snmptrapd`)**
+If `snmptrapd` is not installed, install it first:
+
+#### **Debian/Ubuntu:**
+```bash
+sudo apt update
+sudo apt install snmptrapd -y
+```
+
+#### **RHEL/CentOS:**
+```bash
+sudo yum install net-snmp net-snmp-utils -y
+```
+
+#### **Arch Linux:**
+```bash
+sudo pacman -Sy net-snmp
+```
+
+---
+
+### **2. Configure `snmptrapd` to Log Traps**
+Edit the SNMP trap daemon config file:
+```bash
+sudo nano /etc/snmp/snmptrapd.conf
+```
+Add the following lines:
+```
+authCommunity log,execute,net public
+outputOption s
+```
+- `authCommunity log,execute,net public` → Allows SNMP traps with the community "public" (adjust if needed).
+- `outputOption s` → Ensures logs are written to syslog.
+
+Save the file (`CTRL + X`, then `Y`, then `Enter`).
+
+---
+
+### **3. Enable and Start `snmptrapd`**
+Start and enable the SNMP trap daemon:
+```bash
+sudo systemctl start snmptrapd
+sudo systemctl enable snmptrapd
+```
+
+---
+
+### **4. Verify SNMP Trap Logs**
+Check logs using:
+```bash
+sudo journalctl -u snmptrapd -f
+```
+Or:
+```bash
+sudo tail -f /var/log/syslog  # (Debian/Ubuntu)
+sudo tail -f /var/log/messages  # (RHEL/CentOS)
+```
+
+---
+
+### **5. (Optional) Log Traps to a Custom File**
+To log SNMP traps to a separate file, modify `/etc/snmp/snmptrapd.conf`:
+```
+authCommunity log,execute,net public
+outputOption s
+logOption f /var/log/snmptraps.log
+```
+Create the log file and set permissions:
+```bash
+sudo touch /var/log/snmptraps.log
+sudo chmod 666 /var/log/snmptraps.log
+```
+Restart the service:
+```bash
+sudo systemctl restart snmptrapd
+```
+Now, traps will be logged in `/var/log/snmptraps.log`:
+```bash
+tail -f /var/log/snmptraps.log
+```
+
+---
+
+This setup will capture and log all incoming SNMP traps. 
+
+
+##
+
+# Great! 🎉 Your `snmptrapd` service is now running successfully from the **system version** (`/usr/sbin/snmptrapd`).  
+
+### **Verify It's Working**  
+Now, let's confirm that SNMP traps are being received and logged:  
+
+#### **1. Check if `snmptrapd` is Listening on Port 162**
+Run:
+```bash
+sudo ss -tuln | grep 162
+```
+You should see an output like:
+```
+udp   UNCONN  0  0  0.0.0.0:162  0.0.0.0:*  
+udp6  UNCONN  0  0  [::]:162     [::]:*  
+```
+This confirms that `snmptrapd` is listening for SNMP traps.
+
+#### **2. Check Logs for SNMP Traps**
+By default, SNMP traps are logged in `/var/log/syslog` (Ubuntu). To monitor incoming traps in real time, run:
+```bash
+sudo tail -f /var/log/syslog | grep snmptrapd
+```
+If you're using RHEL/CentOS, check:
+```bash
+sudo tail -f /var/log/messages | grep snmptrapd
+```
+
+#### **3. Send a Test SNMP Trap**
+From another device (or the same machine), send a test SNMP trap:
+```bash
+snmptrap -v 2c -c public 127.0.0.1 "" .1.3.6.1.4.1.8072.2.3.0.1
+```
+If everything is working, you should see the trap logged in `/var/log/syslog`.
+
+---
+
+### **(Optional) Log Traps to a Separate File**
+If you want to log SNMP traps to a dedicated file instead of `/var/log/syslog`, edit the `snmptrapd` config:
+```bash
+sudo nano /etc/snmp/snmptrapd.conf
+```
+Add:
+```
+authCommunity log,execute,net public
+logOption f /var/log/snmptraps.log
+```
+Create the log file and set permissions:
+```bash
+sudo touch /var/log/snmptraps.log
+sudo chmod 666 /var/log/snmptraps.log
+```
+Restart `snmptrapd`:
+```bash
+sudo systemctl restart snmptrapd
+```
+Now, traps will be logged in `/var/log/snmptraps.log`:
+```bash
+tail -f /var/log/snmptraps.log
+```
+
+---
+
+Everything looks good now! 🚀 Let me know if you need more help.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 To monitor the status of your application (e.g., ensuring that the SNMP process is running, and the application is decoding SNMP traps as expected), you can set up a simple monitoring system using SNMP to periodically check the status of the application and the SNMP process. Here’s a breakdown of how you can approach this:
 
 ### Steps:
